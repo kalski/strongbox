@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 @XmlAccessorType(XmlAccessType.NONE)
 @ArtifactCoordinatesLayout(name = DockerArtifactCoordinates.LAYOUT_NAME, alias = DockerArtifactCoordinates.LAYOUT_ALIAS)
 public class DockerArtifactCoordinates
-    extends AbstractArtifactCoordinates<DockerArtifactCoordinates, SemanticVersion>
+    extends AbstractArtifactCoordinates<DockerArtifactCoordinates, String>
 {
 
     public static final String LAYOUT_NAME = "Docker";
@@ -31,8 +31,6 @@ public class DockerArtifactCoordinates
 
     public static final String TAG = "tag";
 
-    public static final String HASH = "hash";
-
     //
     // TODO: We will have to think about something like this:
     //
@@ -40,9 +38,7 @@ public class DockerArtifactCoordinates
 
 
     public DockerArtifactCoordinates(String repository,
-                                     String tag,
-                                     String hash,
-                                     List<String> layers)
+                                     String reference)
     {
         // if any of the required arguments are empty, throw an error
         if (StringUtils.isBlank(repository))
@@ -50,20 +46,14 @@ public class DockerArtifactCoordinates
             throw new IllegalArgumentException("The repository field is mandatory.");
         }
 
-        if (StringUtils.isBlank(tag))
+        if (StringUtils.isBlank(reference))
         {
-            throw new IllegalArgumentException("The tag field is mandatory.");
-        }
-
-        if (StringUtils.isBlank(hash))
-        {
-            throw new IllegalArgumentException("The hash field is mandatory.");
+            throw new IllegalArgumentException("The reference field is mandatory.");
         }
 
         setId(repository);
-        setVersion(tag);
-        setHash(hash);
-
+        setVersion(reference);
+        
         // TODO:
         // setLayers(layers);
     }
@@ -98,17 +88,6 @@ public class DockerArtifactCoordinates
         setCoordinate(TAG, version);
     }
 
-    @ArtifactLayoutCoordinate
-    public String getHash()
-    {
-        return getCoordinate(HASH);
-    }
-
-    public void setHash(String hash)
-    {
-        setCoordinate(HASH, hash);
-    }
-
     //
     // TODO: We will have to think about something like this:
     //
@@ -137,23 +116,9 @@ public class DockerArtifactCoordinates
      * @return Returns the native version of the package
      */
     @Override
-    public SemanticVersion getNativeVersion()
+    public String getNativeVersion()
     {
-        String versionLocal = getVersion();
-
-        if (versionLocal == null)
-        {
-            return null;
-        }
-
-        try
-        {
-            return SemanticVersion.parse(versionLocal);
-        }
-        catch (IllegalArgumentException e)
-        {
-            return null;
-        }
+        return getVersion();
     }
 
     /**
