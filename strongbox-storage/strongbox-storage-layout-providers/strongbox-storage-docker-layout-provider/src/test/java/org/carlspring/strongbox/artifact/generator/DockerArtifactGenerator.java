@@ -31,6 +31,8 @@ public class DockerArtifactGenerator
     private Path basePath;
 
     private Path imageManifestPath;
+    
+    private String imageManifestDigest;
 
     private Path configPath;
 
@@ -82,7 +84,10 @@ public class DockerArtifactGenerator
                     GzipCompressorOutputStream gzipOut = new GzipCompressorOutputStream(layerOutput);
                     TarArchiveOutputStream tarOut = new TarArchiveOutputStream(layerOutput))
             {
-                writeContent(tarOut);
+                layerOutput.addAlgorithm(MessageDigestAlgorithms.SHA_256);
+                layerOutput.setDigestStringifier(this::toUtf8);
+                
+                writeLayer(tarOut);
                 
                 String sha256 = layerOutput.getDigestMap().get(MessageDigestAlgorithms.SHA_256);
                 layerDigest = getDigest(sha256);
@@ -101,8 +106,19 @@ public class DockerArtifactGenerator
         ImageManifest imageManifest = new ImageManifest();
         imageManifest.setConfig(config);
         imageManifest.setLayers(layers);
-        // TODO: set media types and schema versions based on protocol sniffing
-        // Ensure the ImageManifest matches the proper manifest from protocol sniffing 
+        
+        try (LayoutOutputStream manifestOutput = new LayoutOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(imageManifestPath, StandardOpenOption.CREATE))))
+        {
+            manifestOutput.addAlgorithm(MessageDigestAlgorithms.SHA_256);
+            manifestOutput.setDigestStringifier(this::toUtf8);
+
+            manifestOutput.write(mapper.writeValueAsBytes(imageManifest));
+
+            String sha256 = manifestOutput.getDigestMap().get(MessageDigestAlgorithms.SHA_256);
+            imageManifestDigest = getDigest(sha256); 
+        }
+        // TODO: set media types and schema versions to v2 / schema 2
     }
     
     private String getDigest(String sha256)
@@ -110,7 +126,7 @@ public class DockerArtifactGenerator
         return "sha256:" + sha256;
     }
 
-    private void writeContent(TarArchiveOutputStream tarOut)
+    private void writeLayer(TarArchiveOutputStream tarOut)
         throws IOException,
         UnsupportedEncodingException
     {
@@ -154,6 +170,11 @@ public class DockerArtifactGenerator
     public Path getImageManifestPath()
     {
         return imageManifestPath;
+    }
+    
+    public String getImageManifestDigest()
+    {
+        return imageManifestDigest;
     }
 
     public Path getConfigPath()
