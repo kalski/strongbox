@@ -82,7 +82,7 @@ public class DockerArtifactGenerator
                             new BufferedOutputStream(
                                     Files.newOutputStream(tempLayerArchivePath, StandardOpenOption.CREATE)));
                     GzipCompressorOutputStream gzipOut = new GzipCompressorOutputStream(layerOutput);
-                    TarArchiveOutputStream tarOut = new TarArchiveOutputStream(layerOutput))
+                    TarArchiveOutputStream tarOut = new TarArchiveOutputStream(gzipOut))
             {
                 layerOutput.addAlgorithm(MessageDigestAlgorithms.SHA_256);
                 layerOutput.setDigestStringifier(this::toUtf8);
